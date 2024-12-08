@@ -30,7 +30,7 @@ default_settings = {
 
 settings_file = "settings.json"
 
-# Database file path 
+#files path 
 db_file = os.path.join(os.getcwd(), "database/local_database.json")
 settings_file = os.path.join(os.getcwd(), "settings.json")
 
