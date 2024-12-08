@@ -18,7 +18,7 @@ class AddToDatabaseWindow(QWidget):
 
     def init_ui(self):
         # Remove window borders and keep always on top
-        self.setWindowFlags(Qt.FramelessWindowHint| Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setWindowTitle("ADD NEW")
         # Set background image
         image_number = random.randint(1, 2)
@@ -129,7 +129,6 @@ class AddToDatabaseWindow(QWidget):
         self.image_combobox = QComboBox()
         self.image_combobox.setFont(font_settings)
         self.image_combobox.setFixedHeight(input_height)
-        self.image_combobox.setEditable(True)
         self.image_combobox.addItems(["", "Done", "Not Done"])
         self.image_combobox.currentIndexChanged.connect(self.update_submit_button_color)
         grid_layout.addWidget(self.image_combobox, 5, 1)
@@ -206,10 +205,10 @@ class AddToDatabaseWindow(QWidget):
             if not self.confirm_overwrite(existing_entry):
                 return
             existing_entry.update(form_data)
-            show_message("Success", "Entry updated successfully!")
+            show_message("Success","Correct", "Entry updated successfully!")
         else:
             data[brand].append(form_data)
-            show_message("Success", "Data submitted successfully!")
+            show_message("Success","Correct", "Data submitted successfully!")
 
         # Save changes and clear fields
         save_db(data)
@@ -232,11 +231,13 @@ class AddToDatabaseWindow(QWidget):
 
     def find_existing_entry(self, brand_data, form_data):
         """Find an existing entry matching the form data."""
+        # Uses all() to check if every key-value pair
+        # Uses item.get(key, "") to avoid KeyError if a key is missing.
+        # Converts both values to str() to handle different data types.
         return next(
-            (item for item in brand_data if 
-            item["Model"] == form_data["Model"] and 
-            item["Type"] == form_data["Type"] and 
-            item["Windows Version"] == form_data["Windows Version"]),
+            (item for item in brand_data if
+            item.get("Model") == form_data.get("Model") and
+            item.get("Type") == form_data.get("Type")),
             None
         )
 
