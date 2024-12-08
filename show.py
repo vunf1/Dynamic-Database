@@ -40,7 +40,7 @@ class DataViewApp(QWidget):
 
     def init_ui(self):
         # Remove borders and set always on top
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setGeometry(100, 100, 800, 600)
 
         # Set background image
@@ -160,6 +160,7 @@ class DataViewApp(QWidget):
                         # Add item data or an empty string if the key is missing
                         row.append(QStandardItem(item.get(header, "")))
                 self.model.appendRow(row)
+
     def delete_selected_entry(self):
         """Delete the currently selected entry."""
         selected_index = self.table_view.currentIndex()
@@ -178,15 +179,20 @@ class DataViewApp(QWidget):
         # Collect data from the row, excluding the "Brand" header
         item_data = {
             header: self.model.item(row_index, col).text() 
-            for col, header in enumerate(headers) if header != "Brand"
+            for col, header in enumerate(headers) 
+            if header != "Brand"
         }
+        # Format data into a readable string
+        formatted_data = "\n".join(f"{key}: {value}" for key, value in item_data.items())
 
         # Confirm Deletion
         if not confirm_msg(
             "Delete Entry", 
-            f"Are you sure you want to delete this entry?\n\nBrand: {brand}\nData: {item_data}"
-        ):
-            return
+            f"Are you sure you want to delete this entry?\n\n"
+            f"Brand: {brand}\n\n"
+            f"{formatted_data}",
+            parent=self
+        ):return
 
         # Update the data and remove the entry
         data = load_db()
