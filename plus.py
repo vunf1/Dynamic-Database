@@ -238,10 +238,3 @@ class AddToDatabaseWindow(QWidget):
             palette.setBrush(QPalette.Background, QBrush(scaled_pixmap))
 
         self.setPalette(palette)
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = AddToDatabaseWindow()
-    window.show()
-    app.exec_()

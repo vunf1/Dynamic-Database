@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QLabel, QWidget, QHBoxLayout, QHeaderView
 )
-from PyQt5.QtCore import Qt, QSortFilterProxyModel
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QMouseEvent, QPalette, QBrush, QPixmap, QColor
 
 from helpers import confirm_msg, show_message
@@ -13,6 +13,7 @@ import random
 class CustomFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.drag_position = QPoint()
         self.filter_string = ""
 
     def setFilterString(self, text):
@@ -38,7 +39,7 @@ class DataViewApp(QWidget):
         self.setWindowTitle("Images DB")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon("assets/icons/icon.ico"))
-        self.set_background_image(f"assets/image/background-{random.randint(1, 2)}.png")
+        self.set_background_image(f"assets/image/background-{random.randint(1, 3)}.png")
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(self.create_top_bar())
@@ -82,6 +83,43 @@ class DataViewApp(QWidget):
 
     def setup_table_view(self, table_view):
         table_view.setSortingEnabled(True)
+        table_view.setStyleSheet("""
+            QTableView {
+                background-color: rgba(255, 255, 255, 150);   
+                alternate-background-color: rgba(173, 216, 230, 128); /* LightBlue with 50% opacity */
+                selection-background-color: rgba(65, 105, 225, 200); /* RoyalBlue with more opacity */
+                selection-color: white;
+                gridline-color: lightgray;
+                font-size: 14px;
+                font-weight: bold; /* Make all text bold */
+            }
+
+            QHeaderView::section {
+                background-color: rgba(65, 105, 225, 128);    /* RoyalBlue with more opacity */
+                color: white;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 5px;
+                border: 1px solid lightgray;
+            }
+
+            QTableView::item {
+                padding: 5px;
+            }
+
+            QTableView::verticalHeader {
+                background-color: transparent; /* Fully transparent background */
+            }
+            QTableView QScrollBar:vertical {
+                background: rgba(245, 245, 245, 255); /* WhiteSmoke with transparency */
+            }
+
+            QTableView QScrollBar:horizontal {
+                background: rgba(245, 245, 245, 150); /* WhiteSmoke with transparency */
+            }
+        """)
+
+
         header = table_view.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         header.setStretchLastSection(True)
@@ -141,9 +179,18 @@ class DataViewApp(QWidget):
         self.proxy_model.setFilterString(self.filter_input.text())
 
     def open_add_window(self):
-        self.add_window = AddToDatabaseWindow()
-        self.add_window.data_added_signal.connect(self.load_data_GUI)
-        self.add_window.show()
+        if not hasattr(self, 'add_window') or self.add_window is None:
+            self.add_window = AddToDatabaseWindow()
+            self.add_window.data_added_signal.connect(self.load_data_GUI)
+            self.add_window.show()
+            self.add_window.destroyed.connect(self.clear_add_window_instance)  # Clear instance when window is closed
+        else:
+            self.add_window.raise_()  # Bring the existing window to the front
+            self.add_window.activateWindow()
+
+    def clear_add_window_instance(self):
+        """Clear the instance of add_window when it is closed."""
+        self.add_window = None
 
     def set_background_image(self, image_path):
         palette = QPalette()
@@ -182,6 +229,16 @@ class DataViewApp(QWidget):
         button.setToolTip(tooltip)
         button.clicked.connect(action)
         return button
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if event.buttons() == Qt.LeftButton:
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
 
 
 if __name__ == "__main__":
