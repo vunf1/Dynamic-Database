@@ -83,9 +83,10 @@ class DataViewApp(QWidget):
 
     def setup_table_view(self, table_view):
         table_view.setSortingEnabled(True)
+        table_view.verticalHeader().setVisible(False)
         table_view.setStyleSheet("""
             QTableView {
-                background-color: rgba(255, 255, 255, 150);   
+                background-color: rgba(255, 255, 255, 128);   
                 alternate-background-color: rgba(173, 216, 230, 128); /* LightBlue with 50% opacity */
                 selection-background-color: rgba(65, 105, 225, 200); /* RoyalBlue with more opacity */
                 selection-color: white;
@@ -95,7 +96,7 @@ class DataViewApp(QWidget):
             }
 
             QHeaderView::section {
-                background-color: rgba(65, 105, 225, 128);    /* RoyalBlue with more opacity */
+                background-color: rgba(65, 105, 225, 128);    /* RoyalBlue 50% opacity */
                 color: white;
                 font-weight: bold;
                 font-size: 14px;
@@ -105,10 +106,6 @@ class DataViewApp(QWidget):
 
             QTableView::item {
                 padding: 5px;
-            }
-
-            QTableView::verticalHeader {
-                background-color: transparent; /* Fully transparent background */
             }
             QTableView QScrollBar:vertical {
                 background: rgba(245, 245, 245, 255); /* WhiteSmoke with transparency */
