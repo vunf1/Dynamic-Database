@@ -18,6 +18,9 @@
             "Windows 10 Pro": null,
             "Windows 11 Home": null,
             "Windows 11 Pro": null
+        },
+        "Location":{
+            "E:/":null
         }
     }
 }

@@ -24,6 +24,9 @@ default_settings = {
             "Windows 10 Pro": None,
             "Windows 11 Home": None,
             "Windows 11 Pro": None
+        },
+        "Location":{
+            "E:/": None
         }
     }
 }

@@ -1,16 +1,18 @@
+import os
 from PyQt5.QtWidgets import (
-    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QLabel, QWidget, QHBoxLayout, QHeaderView
+    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QWidget, QHBoxLayout, QHeaderView
 )
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QMouseEvent, QPalette, QBrush, QPixmap, QColor
 
 from helpers import confirm_msg, show_message
-from model.json_logic import load_db, save_db
+from model.json_logic import load_db, save_db, load_settings_data
 from plus import AddToDatabaseWindow
 import random
 
 
 class CustomFilterProxyModel(QSortFilterProxyModel):
+    """Custom filter model class inheriting from QSortFilterProxyModel"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.drag_position = QPoint()
@@ -19,15 +21,18 @@ class CustomFilterProxyModel(QSortFilterProxyModel):
     def setFilterString(self, text):
         self.filter_string = text.lower()
         self.invalidateFilter()
-
+ 
     def filterAcceptsRow(self, source_row, source_parent):
-        model = self.sourceModel()
+        """Method to check if a row meets the filter criteria"""
+        # Access the source model
+        model = self.sourceModel()        
+        # Concatenate all column data from the row into a single lowercase string
         row_data = " ".join(
             model.data(model.index(source_row, col, source_parent)) or "" 
             for col in range(model.columnCount())
         ).lower()
+        # Check if all words/letters from the filter string are present in the row data
         return all(word in row_data for word in self.filter_string.split())
-
 
 class DataViewApp(QWidget):
     def __init__(self):
@@ -52,6 +57,9 @@ class DataViewApp(QWidget):
         self.table_view = QTableView()
         self.table_view.setModel(self.proxy_model)
         self.setup_table_view(self.table_view)
+        # Connect cell click signal
+        self.table_view.doubleClicked.connect(self.cell_double_clicked)
+
         main_layout.addWidget(self.table_view)
 
         self.setLayout(main_layout)
@@ -115,7 +123,6 @@ class DataViewApp(QWidget):
                 background: rgba(245, 245, 245, 150); /* WhiteSmoke with transparency */
             }
         """)
-
 
         header = table_view.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
@@ -237,7 +244,56 @@ class DataViewApp(QWidget):
             self.move(event.globalPos() - self.drag_position)
             event.accept()
 
+    def cell_double_clicked(self, index):
+        """
+        Handles double-click events in the table view.
+        Extracts location, model, and type, and opens the corresponding folder.
+        """
+        if not index.isValid():
+            return
 
+        # Get source index from proxy model
+        source_index = self.proxy_model.mapToSource(index)
+
+        # Extract row data
+        row_data = {
+            self.model.headerData(col, Qt.Horizontal): self.model.item(source_index.row(), col).text().strip()
+            for col in range(self.model.columnCount())
+        }
+
+        # Validate required fields
+        brand, model, device_type = row_data.get("Brand"), row_data.get("Model"), row_data.get("Type")
+        if not all([brand, model, device_type]):
+            show_message("warning", "Error", "Brand, Model, or Type is missing.")
+            return
+
+        # Load main location from settings
+        location = list(load_settings_data()["Settings"]["Location"].keys())[0]
+
+        folder_patterns = [
+            f"{model} {device_type}",   # Space-separated
+            f"{model}_{device_type}",   # Underscore-separated
+            f"{model}{device_type}",    # Concatenated
+            f"{model}",                 # Model only
+            f"#{model} {device_type}",  # #Space-separated
+            f"#{model}_{device_type}",  # #Underscore-separated
+            f"#{model}{device_type}",   # #Concatenated
+            f"#{model}"                 # #Model
+        ]
+        # Open the first existing folder or show an error
+        # Search for the first matching folder
+        for pattern in folder_patterns:
+            folder_path = os.path.join(location, brand, pattern)
+            if os.path.isdir(folder_path):
+                os.startfile(folder_path)
+                return
+
+        # Show error if no folder exists
+        show_message(
+            "warning", 
+            "Folder Not Found", 
+            f"No folder found at:\n" + "\n".join(f"'{path}'" for path in folder_patterns)
+        )
 if __name__ == "__main__":
     app = QApplication([])
     window = DataViewApp()
