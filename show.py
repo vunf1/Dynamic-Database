@@ -41,7 +41,9 @@ class DataViewApp(QWidget):
     def init_ui(self):
         # Remove borders and set always on top
         self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowTitle("Images DB")  # Set the window title
         self.setGeometry(100, 100, 800, 600)
+        self.setWindowIcon(QIcon("assets/icons/icon.ico"))  # Path to your icon file
 
         # Set background image
         image_number = random.randint(1, 2)

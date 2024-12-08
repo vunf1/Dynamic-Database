@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QGridLayout, QWidget
 )
 
-from PyQt5.QtGui import QFont, QMouseEvent, QPalette, QBrush, QPixmap, QColor
+from PyQt5.QtGui import QFont, QMouseEvent, QPalette, QBrush, QPixmap, QColor, QIcon
 from PyQt5.QtCore import pyqtSignal, Qt, QPoint
 from model.json_logic import load_db, load_settings_data, save_db 
 from helpers import MessageBox, confirm_msg, show_message
@@ -19,6 +19,8 @@ class AddToDatabaseWindow(QWidget):
     def init_ui(self):
         # Remove window borders and keep always on top
         self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowTitle("Add Images")  # Set the window title
+        self.setWindowIcon(QIcon("assets/icons/icon.ico"))  # Path to your icon file
         self.setWindowTitle("ADD NEW")
         # Set background image
         image_number = random.randint(1, 2)

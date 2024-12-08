@@ -1,1 +1,1 @@
-pyinstaller --clean --onefile --noconsole --add-data "assets;assets" --icon "assets/icons/icon.ico" --add-data "database/local_database.json;database" show.py
+pyinstaller --clean --onefile --noconsole --add-data "assets;assets" --icon "assets/icons/icon.ico" --add-data "database;database" show.py
