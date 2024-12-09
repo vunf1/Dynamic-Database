@@ -22,7 +22,6 @@ class AddToDatabaseWindow(QWidget):
     def init_ui(self):
         self.setup_window()
         self.setup_layout()
-        self.beautify_json_file_save()
 
     def setup_window(self):
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -204,10 +203,6 @@ class AddToDatabaseWindow(QWidget):
 
     def force_uppercase(self, line_edit):
         line_edit.setText(line_edit.text().upper())
-
-    def beautify_json_file_save(self):
-        data = load_db()
-        save_db(data)
 
     def clear_fields(self):
         self.brand_combobox.setCurrentIndex(0)
