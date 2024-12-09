@@ -1,0 +1,26 @@
+{
+    "Settings": {
+        "Brands": {
+            "HP": null,
+            "Lenovo": null,
+            "Dell": null,
+            "Fujitsu": null,
+            "Surface": null
+        },
+        "Types": {
+            "Mini": null,
+            "SFF": null,
+            "Tower": null,
+            "Laptop": null
+        },
+        "WindowsVersions": {
+            "Windows 10 Home": null,
+            "Windows 10 Pro": null,
+            "Windows 11 Home": null,
+            "Windows 11 Pro": null
+        },
+        "Location":{
+            "E:/":null
+        }
+    }
+}

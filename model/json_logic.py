@@ -35,7 +35,7 @@ settings_file = "settings.json"
 
 #files path 
 db_file = os.path.join(os.getcwd(), "database/local_database.json")
-settings_file = os.path.join(os.getcwd(), "settings.json")
+settings_file = os.path.join(os.getcwd(), "helpers/settings.json")
 
 def load_settings_data():
     """Load settings from the settings.json file or create it if missing."""
