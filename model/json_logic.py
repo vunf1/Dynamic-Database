@@ -38,27 +38,29 @@ db_file = os.path.join(os.getcwd(), "database/local_database.json")
 settings_file = os.path.join(os.getcwd(), "helpers/settings.json")
 
 def load_settings_data():
-    """Load settings from the settings.json file or create it if missing."""
+    """Load settings from the settings.json file or create it with defaults if missing or invalid."""
+    # Ensure the directory for the settings file exists
+    os.makedirs(os.path.dirname(settings_file), exist_ok=True)
+    
     if not os.path.exists(settings_file):
-        # Create the settings file with default structure if it doesn't exist
+        # Create the settings file with the default structure if it doesn't exist
         with open(settings_file, "w") as file:
             json.dump(default_settings, file, indent=4)
         return default_settings
     
     try:
-        # Read and return the file content
+        # Read and validate the settings file content
         with open(settings_file, "r") as file:
             data = json.load(file)
-            # Ensure the loaded data is valid
+            # Ensure the loaded data matches the expected structure
             if not isinstance(data, dict) or "Settings" not in data:
                 raise json.JSONDecodeError("Invalid format", settings_file, 0)
             return data
     except (json.JSONDecodeError, FileNotFoundError):
-        # Restore default settings if file is corrupted or unreadable
+        # Restore default settings if the file is corrupted or unreadable
         with open(settings_file, "w") as file:
             json.dump(default_settings, file, indent=4)
         return default_settings
-    
 def load_db():
     """
     Load the database from a local JSON file.
