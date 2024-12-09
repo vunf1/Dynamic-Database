@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QMouseEvent, QPalette, QBrush, QPixmap, QColor
 
-from helpers import confirm_msg, show_message
+from helpers.helpers import confirm_msg, show_message
 from model.json_logic import load_db, save_db, load_settings_data
 from plus import AddToDatabaseWindow
 import random
@@ -74,8 +74,11 @@ class DataViewApp(QWidget):
     def create_filter_bar(self):
         filter_layout = QHBoxLayout()
 
-        self.delete_button = self.create_button("Del Sel", "red", self.delete_selected_entry)
+        self.delete_button = self.create_icon_button("delete.svg", "Select Row to Delete", self.delete_selected_entry)
         filter_layout.addWidget(self.delete_button)
+
+        self.edit_button = self.create_icon_button("edit.svg", "Select Row to Edit", self.edit_selected_entry)
+        filter_layout.addWidget(self.edit_button)
 
         self.refresh_button = self.create_icon_button("refresh.svg", "Refresh Data", self.load_data_GUI)
         filter_layout.addWidget(self.refresh_button)
@@ -132,19 +135,83 @@ class DataViewApp(QWidget):
     def load_data_GUI(self):
         self.model.clear()
         data = load_db()
+        # Define the priority headers
+        priority_headers = ["Brand", "Model", "Type"]
 
-        ordered_headers = ["Brand", "Model"] + list(
-            {key for items in data.values() for item in items for key in item.keys()} - {"Brand", "Model"}
+        # Collect all unique keys from the data, excluding the priority headers
+        additional_headers = sorted(
+            {key for items in data.values() for item in items for key in item.keys()} - set(priority_headers)
         )
 
+        # Combine priority headers with additional headers
+        ordered_headers = priority_headers + additional_headers
+
         self.model.setHorizontalHeaderLabels(ordered_headers)
+        # Populate rows in the model
         for brand, items in data.items():
             for item in items:
-                row = [
-                    QStandardItem(str(item.get(header, ""))) if header != "Brand" else QStandardItem(brand)
-                    for header in ordered_headers
-                ]
+                row = []
+                for header in ordered_headers:
+                    value = str(item.get(header, brand if header == "Brand" else ""))
+                    # Create a QStandardItem for each cell, better for custom profiles
+                    item_cell = QStandardItem(value)
+                    # Make cells non-editable
+                    item_cell.setFlags(item_cell.flags() & ~Qt.ItemIsEditable)
+                    # Apply conditional formatting for the 'Image' column
+                    if header == "Image":
+                        if value == "Done":
+                            item_cell.setBackground(QColor("#5f8244"))
+                        else:
+                            item_cell.setBackground(QColor("#bd4613"))
+                    row.append(item_cell)
                 self.model.appendRow(row)
+
+
+    def edit_selected_entry(self):
+        """
+        Opens AddToDatabaseWindow populated with the selected row's values.
+        """
+        selected_index = self.table_view.currentIndex()
+        if not selected_index.isValid():
+            show_message("warning", "No Selection", "Please select an entry to edit.")
+            return
+
+        # Close the previous window if it exists
+        if hasattr(self, "edit_window") and self.edit_window is not None:
+            self.edit_window.close()
+            """
+            self.edit_window.deleteLater() is a method in PyQt5 that schedules the deletion 
+            of the edit_window object when control returns to the event loop. 
+            This is useful because deleting a QWidget immediately 
+            while it’s still being used can cause crashes or undefined behavior.
+            """
+            self.edit_window.deleteLater()
+
+        # Extract row data
+        row_index = selected_index.row()
+        headers = [self.model.headerData(col, Qt.Horizontal) for col in range(self.model.columnCount())]
+        item_data = {
+            header: self.model.item(row_index, col).text()
+            for col, header in enumerate(headers)
+        }
+
+        # Create a new instance of AddToDatabaseWindow and populate fields
+        self.edit_window = AddToDatabaseWindow()
+        self.edit_window.brand_combobox.setCurrentText(item_data.get("Brand", ""))
+        self.edit_window.model_entry.setText(item_data.get("Model", ""))
+        self.edit_window.type_combobox.setCurrentText(item_data.get("Type", ""))
+        self.edit_window.windows_version_combobox.setCurrentText(item_data.get("Windows Version", ""))
+        self.edit_window.image_combobox.setCurrentText(item_data.get("Image", ""))
+        
+        # Refresh data and close window after successful edit
+        self.edit_window.data_added_signal.connect(self.load_data_GUI)
+        self.edit_window.data_added_signal.connect(self.edit_window.close)
+
+        # Connect the signal to refresh data after editing
+        self.edit_window.data_added_signal.connect(self.load_data_GUI)
+
+        # Show the edit window
+        self.edit_window.show()
 
     def delete_selected_entry(self):
         selected_index = self.table_view.currentIndex()
@@ -183,7 +250,7 @@ class DataViewApp(QWidget):
         self.proxy_model.setFilterString(self.filter_input.text())
 
     def open_add_window(self):
-        if not hasattr(self, 'add_window') or self.add_window is None:
+        if not hasattr(self, 'add_window') or self.add_window is None: # Allow just one instance 
             self.add_window = AddToDatabaseWindow()
             self.add_window.data_added_signal.connect(self.load_data_GUI)
             self.add_window.show()
