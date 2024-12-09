@@ -1,7 +1,7 @@
 
 # **Image Database Manager**
 
-This project is a **PyQt5-based GUI application** that manages an image database by extracting data from a table, checking for folder paths based on specific patterns, and opening corresponding folders in the file explorer.
+This project is a **PyQt5-based GUI application** that manages an image database by extracting data and create a table, checking for folder paths based on specific patterns, and opening corresponding folders in the file explorer.
 
 ---
 
@@ -21,11 +21,12 @@ This project is a **PyQt5-based GUI application** that manages an image database
 ---
 
 
-1. **Install Dependencies:**
+1. **Build:**
    ```bash
    pip install -r requirements.txt
+   python build.py
+   -------copy folder 'assets' if want icons and background  
    ```
-
 ---
 
 ## **Project Structure**
@@ -33,20 +34,37 @@ This project is a **PyQt5-based GUI application** that manages an image database
 image-db-manager/
 │
 ├── assets/                   # Icons and images for the UI
-│   ├── icons/
-│   └── image/
+│   ├── icons/                # Icons used in the UI
+│   │   ├── add.svg
+│   │   ├── delete.svg
+│   │   ├── edit.svg
+│   │   ├── icon.ico
+│   │   └── refresh.svg
+│   └── image/                # Background images for the UI
+│       ├── background-1.png
+│       ├── background-2.png
+│       └── background-3.png
 │
-├── database/
-│   └── local_database.json   # Database for storing records
+├── database/                 # Database storage
+│   └── local_database.json   # Main database file in JSON format
+│
+│
+├── helpers/                  # Helper modules for utility functions and configurations
+│   ├── __pycache__/          # Compiled Python files (ignored in Git)
+│   ├── helpers.py            # General helper functions
+│   └── settings.json         # Default or loaded settings for the application
 │
 ├── model/                    # Data models and logic
-│   └── json_logic.py         # Handles JSON-based logic
+│   ├── __pycache__/          # Compiled Python files (ignored in Git)
+│   └── json_logic.py         # JSON logic and validation functions
 │
-├── requirements.txt          # Project dependencies
-├── settings.json             # Configuration file for folder locations
+├── tests/                    # Unit and integration tests (Not ready yet)
+│
+├── build.py                  # Script to automate the build process
+├── LICENSE                   # License for the project
+├── plus.py                   # Additional functionality or scripts
+├── requirements.txt          # Dependencies required for the project
 ├── show.py                   # Main entry point for the application
-├── show.spec                 # Spec file for building executables
-└── helpers.py                # Utility functions
 ```
 
 ---
