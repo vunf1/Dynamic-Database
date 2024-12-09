@@ -40,14 +40,14 @@ class DataViewApp(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.Window)
         self.setWindowTitle("Images DB")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon("assets/icons/icon.ico"))
         self.set_background_image(f"assets/image/background-{random.randint(1, 3)}.png")
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(self.create_top_bar())
+        # main_layout.addLayout(self.create_top_bar())
         main_layout.addLayout(self.create_filter_bar())
 
         self.model = QStandardItemModel()
@@ -97,36 +97,46 @@ class DataViewApp(QWidget):
         table_view.verticalHeader().setVisible(False)
         table_view.setStyleSheet("""
             QTableView {
-                background-color: rgba(255, 255, 255, 128);   
-                alternate-background-color: rgba(173, 216, 230, 128); /* LightBlue with 50% opacity */
-                selection-background-color: rgba(65, 105, 225, 200); /* RoyalBlue with more opacity */
+                background-color: rgba(255, 255, 255, 180);  /* Light background */
+                alternate-background-color: rgba(173, 216, 230, 150); /* LightBlue */
+                selection-background-color: rgba(65, 105, 225, 220); /* RoyalBlue */
                 selection-color: white;
                 gridline-color: lightgray;
                 font-size: 14px;
-                font-weight: bold; /* Make all text bold */
+                font-weight: bold;
+                border-radius: 15px;  /* Fully rounded corners for the entire table */
+                border: 1px solid lightgray;
             }
 
             QHeaderView::section {
-                background-color: rgba(65, 105, 225, 128);    /* RoyalBlue 50% opacity */
+                background-color: rgba(65, 105, 225, 180);  /* RoyalBlue with transparency */
                 color: white;
                 font-weight: bold;
                 font-size: 14px;
                 padding: 5px;
                 border: 1px solid lightgray;
+                text-align: center;  /* Center header text */
+                border-top-left-radius: 15px;  /* Rounded top corners */
+                border-top-right-radius: 15px;
             }
 
-            QTableView::item {
-                padding: 5px;
-            }
-            QTableView QScrollBar:vertical {
-                background: rgba(245, 245, 245, 255); /* WhiteSmoke with transparency */
+            QTableView::item:selected {
+                background-color: rgba(173, 216, 230, 150);  /* Selection color */
+                color: white;
+                border-radius: 5px;  /* Slightly rounded selection */
             }
 
-            QTableView QScrollBar:horizontal {
-                background: rgba(245, 245, 245, 150); /* WhiteSmoke with transparency */
+            QTableView QScrollBar:horizontal, QTableView QScrollBar:vertical {
+                background: rgba(245, 245, 245, 180); /* Light background for scrollbars */
+                border-radius: 5px;
+            }
+
+            QTableCornerButton::section {
+                background-color: rgba(65, 105, 225, 180);  /* Corner header */
+                border: 1px solid lightgray;
+                border-top-left-radius: 15px;  /* Match table rounding */
             }
         """)
-
         header = table_view.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         header.setStretchLastSection(True)
@@ -155,6 +165,7 @@ class DataViewApp(QWidget):
                     value = str(item.get(header, brand if header == "Brand" else ""))
                     # Create a QStandardItem for each cell, better for custom profiles
                     item_cell = QStandardItem(value)
+                    item_cell.setTextAlignment(Qt.AlignCenter)
                     # Make cells non-editable
                     item_cell.setFlags(item_cell.flags() & ~Qt.ItemIsEditable)
                     # Apply conditional formatting for the 'Image' column
@@ -252,11 +263,12 @@ class DataViewApp(QWidget):
     def open_add_window(self):
         if not hasattr(self, 'add_window') or self.add_window is None: # Allow just one instance 
             self.add_window = AddToDatabaseWindow()
+            self.add_window.setAttribute(Qt.WA_DeleteOnClose)  # Ensure window is deleted on close
             self.add_window.data_added_signal.connect(self.load_data_GUI)
             self.add_window.show()
-            self.add_window.destroyed.connect(self.clear_add_window_instance)  # Clear instance when window is closed
+            self.add_window.destroyed.connect(self.clear_add_window_instance) # Clear instance when window is closed
         else:
-            self.add_window.raise_()  # Bring the existing window to the front
+            self.add_window.raise_() # Bring the existing window to the front
             self.add_window.activateWindow()
 
     def clear_add_window_instance(self):
@@ -338,14 +350,40 @@ class DataViewApp(QWidget):
         location = list(load_settings_data()["Settings"]["Location"].keys())[0]
 
         folder_patterns = [
-            f"{model} {device_type}",   # Space-separated
-            f"{model}_{device_type}",   # Underscore-separated
-            f"{model}{device_type}",    # Concatenated
-            f"{model}",                 # Model only
-            f"#{model} {device_type}",  # #Space-separated
-            f"#{model}_{device_type}",  # #Underscore-separated
-            f"#{model}{device_type}",   # #Concatenated
-            f"#{model}"                 # #Model
+            # Brand and model with device type
+            f"{brand} {model} {device_type}",   # Space-separated
+            f"{brand}_{model}_{device_type}",   # Underscore-separated
+            f"{brand}{model}{device_type}",     # Concatenated
+            f"{brand} {model}_{device_type}",   # Model and device type, underscore-separated
+            f"{brand}_{model} {device_type}",   # Brand and model underscore-separated, device type space-separated
+
+            # Brand and model only
+            f"{brand} {model}",                 # Space-separated
+            f"{brand}_{model}",                 # Underscore-separated
+            f"{brand}{model}",                  # Concatenated
+
+            # Brand and model with prefixed device type
+            f"{brand} {model} {device_type}",   # Space-separated
+            f"{brand}_{model}_{device_type}",   # Underscore-separated
+            f"{brand}{model}{device_type}",     # Concatenated
+
+            # Prefixed with hash (#)
+            f"#{brand} {model} {device_type}",  # #Brand, space-separated
+            f"#{brand}_{model}_{device_type}",  # #Brand, underscore-separated
+            f"#{brand}{model}{device_type}",    # #Brand concatenated
+            f"#{brand} {model}",                # #Brand and model, space-separated
+            f"#{brand}_{model}",                # #Brand and model, underscore-separated
+            f"#{brand}{model}",                 # #Brand and model concatenated
+            
+            # Brand and model, prefixed with model and device type
+            f"{model} {device_type}",           # Model and device type, space-separated
+            f"{model}_{device_type}",           # Model and device type, underscore-separated
+            f"{model}{device_type}",            # Model and device type concatenated
+            f"{model}",                         # Model only
+            f"#{model} {device_type}",          # #Model and device type, space-separated
+            f"#{model}_{device_type}",          # #Model and device type, underscore-separated
+            f"#{model}{device_type}",           # #Model and device type concatenated
+            f"#{model}"                         # #Model only
         ]
         # Open the first existing folder or show an error
         # Search for the first matching folder
