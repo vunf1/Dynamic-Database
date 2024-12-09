@@ -1,1 +1,0 @@
-pyinstaller --clean --onefile --noconsole --add-data "assets;assets" --icon "assets/icons/icon.ico" --add-data "database;database" show.py
