@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QMouseEvent, QPalette, QBrush, QPixmap, QColor, Q
 from PyQt5.QtCore import pyqtSignal, Qt, QPoint
 
 from model.json_logic import load_db, load_settings_data, save_db
-from helpers import confirm_msg, show_message
+from helpers.helpers import confirm_msg, show_message
 
 import random
 
