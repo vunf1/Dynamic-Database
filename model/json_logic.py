@@ -60,16 +60,43 @@ def load_settings_data():
         return default_settings
     
 def load_db():
+    """
+    Load the database from a local JSON file.
+    If the file or directory does not exist, create it.
+    """
+    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    
+    # Create the file if it doesn't exist
     if not os.path.exists(db_file):
         with open(db_file, "w") as file:
             json.dump({}, file)
-    with open(db_file, "r") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {}
 
+    # Load the database with error handling
+    try:
+        with open(db_file, "r") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, IOError):
+        # Return an empty dictionary on failure
+        return {}
+    
 def save_db(data):
-    with open(db_file, "w") as file:
-        json.dump(data, file, indent=4)
+    """
+    Save the given data to the local database file.
+    """
+    try:
+        # Ensure the directory exists before saving
+        os.makedirs(os.path.dirname(db_file), exist_ok=True)
+        
+        # Save the data to the file with pretty formatting
+        with open(db_file, "w") as file:
+            json.dump(data, file, indent=4)
+            
+    
+    except (IOError, OSError) as e:
+        # Handle file-related errors such as permission issues
+        print(f"Error: Unable to save the database file. Details: {e}")
+    
+    except TypeError as e:
+        # Handle errors if data contains unsupported types
+        print(f"Error: Unable to encode data to JSON. Details: {e}")
 
