@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QMouseEvent, QPalette, QBrush, QPixmap, QColor, Q
 from PyQt5.QtCore import pyqtSignal, Qt, QPoint
 
 from model.json_logic import load_db, load_settings_data, save_db
-from helpers.helpers import confirm_msg, show_message
+from helpers.messages_dialog import confirm_message, show_message
 
 import random
 
@@ -71,15 +71,15 @@ class AddToDatabaseWindow(QWidget):
             "Windows Version", grid_layout, 4, windows_version_keys, font_settings, input_height
         )
         self.image_combobox = self.create_combobox(
-            "Image", grid_layout, 5, ["", "Done", "Not Done"], font_settings, input_height
+            "Image", grid_layout, 5, ["Done", "Not Done"], font_settings, input_height
         )
 
         # Submit Button
         self.submit_button = self.create_button(
             "Submit", "orange", self.submit_data, font_settings, (input_height + 5, input_height + 10)
         )
-        self.submit_button.setMinimumHeight(50)
-        self.submit_button.setMinimumWidth(350)
+        self.submit_button.setMinimumHeight(45)
+        self.submit_button.setMinimumWidth(180)
         self.submit_button.setSizePolicy(self.submit_button.sizePolicy().Expanding, self.submit_button.sizePolicy().Fixed)
         # Add layouts
         main_layout.addLayout(grid_layout)
@@ -140,6 +140,8 @@ class AddToDatabaseWindow(QWidget):
         if not all(form_data.values()):
             show_message("critical", "Error", "All fields must be filled!")
             return
+        
+        form_data = {key: value.upper() if isinstance(value, str) else value for key, value in form_data.items()}
 
         brand = form_data.pop("Brand")
         data = load_db()
@@ -153,10 +155,10 @@ class AddToDatabaseWindow(QWidget):
             if not self.confirm_overwrite(existing_entry):
                 return
             existing_entry.update(form_data)
-            show_message("Success", "Correct", "Entry updated successfully!")
+            show_message("information", "Success", "Entry updated successfully!")
         else:
             data[brand].append(form_data)
-            show_message("Success", "Correct", "Data submitted successfully!")
+            show_message("information", "Success", "Data submitted successfully!")
 
         save_db(data)
         self.data_added_signal.emit()
@@ -179,7 +181,7 @@ class AddToDatabaseWindow(QWidget):
             f"Image: {existing_entry['Image']}\n\n"
             f"Do you want to overwrite this entry?"
         )
-        return confirm_msg("Overwrite Confirmation", message)
+        return confirm_message("Overwrite Confirmation", message)
 
     def get_form_data(self):
         return {
@@ -233,3 +235,13 @@ class AddToDatabaseWindow(QWidget):
             palette.setBrush(QPalette.Background, QBrush(scaled_pixmap))
 
         self.setPalette(palette)
+'''
+# Debug
+
+if __name__ == "__main__":    
+    app = QApplication([])
+    window = AddToDatabaseWindow()
+    window.show()
+    app.exec_()
+
+'''
