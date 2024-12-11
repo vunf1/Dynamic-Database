@@ -5,8 +5,6 @@ pyinstaller_command = [
     "--clean",
     "--onefile",
     "--noconsole",
-    "--add-data", "assets;assets",
-    "--add-data", "database;database",
     "--icon", "assets/icons/icon.ico",
     "show.py"
 ]
