@@ -24,8 +24,9 @@ This project is a **PyQt5-based GUI application** that manages an image database
 1. **Build:**
    ```bash
    pip install -r requirements.txt
+   mkdir database/pin.txt > echo <Password>
    python build.py
-   -------copy folder 'assets' if want icons and background  
+   -------copy folder 'assets' if want icons and background 
    ```
 ---
 
@@ -50,12 +51,10 @@ image-db-manager/
 │
 │
 ├── helpers/                  # Helper modules for utility functions and configurations
-│   ├── __pycache__/          # Compiled Python files (ignored in Git)
 │   ├── helpers.py            # General helper functions
 │   └── settings.json         # Default or loaded settings for the application
 │
 ├── model/                    # Data models and logic
-│   ├── __pycache__/          # Compiled Python files (ignored in Git)
 │   └── json_logic.py         # JSON logic and validation functions
 │
 ├── tests/                    # Unit and integration tests (Not ready yet)

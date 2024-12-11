@@ -1,13 +1,15 @@
 import os
 from PyQt5.QtWidgets import (
-    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QWidget, QHBoxLayout, QHeaderView
+    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QWidget, QHBoxLayout, QHeaderView, QDialog
 )
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QMouseEvent, QPalette, QBrush, QPixmap, QColor
 
-from helpers.helpers import confirm_msg, show_message
+from helpers.messages_dialog import confirm_message, show_message
+from helpers.pin_request import PinDialog
 from model.json_logic import load_db, save_db, load_settings_data
 from plus import AddToDatabaseWindow
+
 import random
 
 
@@ -170,7 +172,7 @@ class DataViewApp(QWidget):
                     item_cell.setFlags(item_cell.flags() & ~Qt.ItemIsEditable)
                     # Apply conditional formatting for the 'Image' column
                     if header == "Image":
-                        if value == "Done":
+                        if value == "DONE":
                             item_cell.setBackground(QColor("#5f8244"))
                         else:
                             item_cell.setBackground(QColor("#bd4613"))
@@ -186,7 +188,13 @@ class DataViewApp(QWidget):
         if not selected_index.isValid():
             show_message("warning", "No Selection", "Please select an entry to edit.")
             return
-
+        
+        # Show PIN dialog before proceeding
+        pin_dialog = PinDialog()
+        if pin_dialog.exec_() != QDialog.Accepted:  
+            show_message("critical", "Access Denied", "Invalid PIN. Action canceled.")
+            return
+        
         # Close the previous window if it exists
         if hasattr(self, "edit_window") and self.edit_window is not None:
             self.edit_window.close()
@@ -229,6 +237,12 @@ class DataViewApp(QWidget):
         if not selected_index.isValid():
             show_message("warning", "No Selection", "Please select an entry to delete.")
             return
+        
+        # Show PIN dialog before proceeding
+        pin_dialog = PinDialog()
+        if pin_dialog.exec_() != QDialog.Accepted: 
+            show_message("critical", "Access Denied", "Invalid PIN. Action canceled.")
+            return
 
         row_index = selected_index.row()
         brand = self.model.item(row_index, 0).text()
@@ -242,9 +256,7 @@ class DataViewApp(QWidget):
 
         formatted_data = "\n".join(f"{key}: {value}" for key, value in item_data.items())
 
-        if not confirm_msg(
-            "Delete Entry", f"Are you sure you want to delete this entry?\n\nBrand: {brand}\n\n{formatted_data}", parent=self
-        ):
+        if not confirm_message("Delete Entry", f"Are you sure you want to delete this entry?\n\nBrand: {brand}\n\n{formatted_data}"):
             return
 
         data = load_db()
@@ -387,20 +399,46 @@ class DataViewApp(QWidget):
         ]
         # Open the first existing folder or show an error
         # Search for the first matching folder
-        for pattern in folder_patterns:
-            folder_path = os.path.join(location, brand, pattern)
-            if os.path.isdir(folder_path):
-                os.startfile(folder_path)
+        try:
+        # List all directories in the target path
+            brand_folder = os.path.join(location, brand)
+            if not os.path.exists(brand_folder):
+                show_message("warning","Not found.", f"{brand} folder not found.")
                 return
+            
+            '''dictionary where keys are lowercase folder names and values are original folder names'''
+            available_folders = {folder.lower(): folder for folder in os.listdir(brand_folder) if os.path.isdir(os.path.join(brand_folder, folder))}
 
+            # Search for the first matching folder
+            for pattern in folder_patterns:
+                normalized_pattern = pattern.lower()
+                if normalized_pattern in available_folders:
+                    folder_path = os.path.join(brand_folder, available_folders[normalized_pattern])
+                    os.startfile(folder_path)
+                    print(f"DEBUG: Folder '{folder_path}' opened successfully.")
+                    return
+            show_message("warning","Folder Not Found",f"No folder found at:\n" + "\n".join(f"'{path}'" for path in folder_patterns)) 
+
+            
         # Show error if no folder exists
-        show_message(
-            "warning", 
-            "Folder Not Found", 
-            f"No folder found at:\n" + "\n".join(f"'{path}'" for path in folder_patterns)
-        )
+        except Exception as e:
+            print(f"ERROR: An unexpected error occurred: {e}")
+
 if __name__ == "__main__":
     app = QApplication([])
     window = DataViewApp()
     window.show()
     app.exec_()
+
+    ''' App start with PIN '''
+    # app = QApplication([])
+    # try:
+    #     # PIN Dialog
+    #     pin_dialog = PinDialog()
+    #     if pin_dialog.exec_() == QDialog.Accepted:  # Show PIN dialog
+    #         window = DataViewApp()
+    #         window.show()
+    #         app.exec_()
+    # except FileNotFoundError as e:
+    #     print(f"Error: {e}")  # Handle missing files
+
