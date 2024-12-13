@@ -1,10 +1,12 @@
 import os
+from textwrap import fill
 from PyQt5.QtWidgets import (
-    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QWidget, QHBoxLayout, QHeaderView, QDialog
+    QApplication, QTableView, QVBoxLayout, QLineEdit, QPushButton, QWidget, QHBoxLayout, QHeaderView, QAbstractItemView, QDialog
 )
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QPoint, QSize
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QMouseEvent, QPalette, QBrush, QPixmap, QColor
 
+from helpers.folder_patterns import generate_folder_patterns
 from helpers.messages_dialog import confirm_message, show_message
 from helpers.pin_request import PinDialog
 from model.json_logic import load_db, save_db, load_settings_data
@@ -46,11 +48,10 @@ class DataViewApp(QWidget):
         self.setWindowTitle("Images DB")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon("assets/icons/icon.ico"))
-        self.set_background_image(f"assets/image/background-{random.randint(1, 3)}.png")
+        self.set_background_image(f"assets/image/background-{random.randint(1, 4)}.png")
 
         main_layout = QVBoxLayout()
-        # main_layout.addLayout(self.create_top_bar())
-        main_layout.addLayout(self.create_filter_bar())
+        main_layout.addLayout(self.create_topbar())
 
         self.model = QStandardItemModel()
         self.proxy_model = CustomFilterProxyModel()
@@ -67,32 +68,32 @@ class DataViewApp(QWidget):
         self.setLayout(main_layout)
         self.load_data_GUI()
 
-    def create_top_bar(self):
-        top_bar_layout = QHBoxLayout()
-        self.close_button = self.create_button("X", "red", self.close, fixed_size=(20, 20))
-        top_bar_layout.addWidget(self.close_button, alignment=Qt.AlignRight)
-        return top_bar_layout
+    def resizeEvent(self, event):
+        self.set_background_image(f"assets/image/background-{random.randint(1, 4)}.png")
+        super().resizeEvent(event)
 
-    def create_filter_bar(self):
-        filter_layout = QHBoxLayout()
+    def create_topbar(self):
+        topbar_layout = QHBoxLayout()
 
         self.delete_button = self.create_icon_button("delete.svg", "Select Row to Delete", self.delete_selected_entry)
-        filter_layout.addWidget(self.delete_button)
+        topbar_layout.addWidget(self.delete_button)
 
         self.edit_button = self.create_icon_button("edit.svg", "Select Row to Edit", self.edit_selected_entry)
-        filter_layout.addWidget(self.edit_button)
+        topbar_layout.addWidget(self.edit_button)
 
         self.refresh_button = self.create_icon_button("refresh.svg", "Refresh Data", self.load_data_GUI)
-        filter_layout.addWidget(self.refresh_button)
+        topbar_layout.addWidget(self.refresh_button)
 
         self.add_button = self.create_icon_button("add.svg", "Add New Entry", self.open_add_window)
-        filter_layout.addWidget(self.add_button)
+        topbar_layout.addWidget(self.add_button)
 
         self.filter_input = QLineEdit(placeholderText="Type to filter...")
+        self.filter_input.setFixedHeight(54)
+        self.filter_input.setStyleSheet("font-size: 30px;")
         self.filter_input.textChanged.connect(self.apply_filter)
-        filter_layout.addWidget(self.filter_input)
+        topbar_layout.addWidget(self.filter_input)
 
-        return filter_layout
+        return topbar_layout
 
     def setup_table_view(self, table_view):
         table_view.setSortingEnabled(True)
@@ -141,6 +142,8 @@ class DataViewApp(QWidget):
         """)
         header = table_view.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
+        table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        table_view.setSelectionMode(QAbstractItemView.SingleSelection) # Ensure that QTableView is in single-selection mode
         header.setStretchLastSection(True)
         table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
@@ -179,40 +182,33 @@ class DataViewApp(QWidget):
                     row.append(item_cell)
                 self.model.appendRow(row)
 
-
     def edit_selected_entry(self):
         """
         Opens AddToDatabaseWindow populated with the selected row's values.
         """
+        # Ensure the correct selection is retrieved
         selected_index = self.table_view.currentIndex()
         if not selected_index.isValid():
             show_message("warning", "No Selection", "Please select an entry to edit.")
             return
-        
+
         # Show PIN dialog before proceeding
         pin_dialog = PinDialog()
         if pin_dialog.exec_() != QDialog.Accepted:  
             show_message("critical", "Access Denied", "Invalid PIN. Action canceled.")
             return
-        
-        # Close the previous window if it exists
-        if hasattr(self, "edit_window") and self.edit_window is not None:
-            self.edit_window.close()
-            """
-            self.edit_window.deleteLater() is a method in PyQt5 that schedules the deletion 
-            of the edit_window object when control returns to the event loop. 
-            This is useful because deleting a QWidget immediately 
-            while it’s still being used can cause crashes or undefined behavior.
-            """
-            self.edit_window.deleteLater()
 
         # Extract row data
-        row_index = selected_index.row()
+        source_index = self.table_view.model().mapToSource(selected_index)
+        row_index = source_index.row()
         headers = [self.model.headerData(col, Qt.Horizontal) for col in range(self.model.columnCount())]
         item_data = {
-            header: self.model.item(row_index, col).text()
+            header: (self.model.item(row_index, col).text() if self.model.item(row_index, col) else "")
             for col, header in enumerate(headers)
         }
+
+        # Debugging: Log the extracted data
+        #print(f"Row Index: {row_index}, Item Data: {item_data}")
 
         # Create a new instance of AddToDatabaseWindow and populate fields
         self.edit_window = AddToDatabaseWindow()
@@ -221,17 +217,15 @@ class DataViewApp(QWidget):
         self.edit_window.type_combobox.setCurrentText(item_data.get("Type", ""))
         self.edit_window.windows_version_combobox.setCurrentText(item_data.get("Windows Version", ""))
         self.edit_window.image_combobox.setCurrentText(item_data.get("Image", ""))
-        
-        # Refresh data and close window after successful edit
-        self.edit_window.data_added_signal.connect(self.load_data_GUI)
-        self.edit_window.data_added_signal.connect(self.edit_window.close)
-
-        # Connect the signal to refresh data after editing
-        self.edit_window.data_added_signal.connect(self.load_data_GUI)
 
         # Show the edit window
         self.edit_window.show()
 
+        # Refresh data and close window after successful edit
+        self.edit_window.data_added_signal.connect(self.edit_window.close)
+        self.edit_window.data_added_signal.connect(self.edit_window.deleteLater)
+        self.edit_window.data_added_signal.connect(self.load_data_GUI)
+    
     def delete_selected_entry(self):
         selected_index = self.table_view.currentIndex()
         if not selected_index.isValid():
@@ -244,13 +238,15 @@ class DataViewApp(QWidget):
             show_message("critical", "Access Denied", "Invalid PIN. Action canceled.")
             return
 
-        row_index = selected_index.row()
+        # Extract row data using source mapping
+        source_index = self.table_view.model().mapToSource(selected_index)
+        row_index = source_index.row()
         brand = self.model.item(row_index, 0).text()
         headers = [self.model.headerData(col, Qt.Horizontal) for col in range(self.model.columnCount())]
 
         item_data = {
-            header: self.model.item(row_index, col).text() 
-            for col, header in enumerate(headers) 
+            header: (self.model.item(row_index, col).text() if self.model.item(row_index, col) else "")
+            for col, header in enumerate(headers)
             if header != "Brand"
         }
 
@@ -290,12 +286,14 @@ class DataViewApp(QWidget):
     def set_background_image(self, image_path):
         palette = QPalette()
         pixmap = QPixmap(image_path)
+
         if pixmap.isNull():
             random_color = QColor(*(random.randint(0, 255) for _ in range(3)))
             palette.setColor(QPalette.Background, random_color)
         else:
             scaled_pixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
             palette.setBrush(QPalette.Background, QBrush(scaled_pixmap))
+
         self.setPalette(palette)
 
     def create_button(self, text, color, action, fixed_size=None):
@@ -318,23 +316,18 @@ class DataViewApp(QWidget):
         button.clicked.connect(action)
         return button
 
-    def create_icon_button(self, icon_path, tooltip, action):
+    def create_icon_button(self, icon_path, tooltip, action, size=(58, 58)):
         button = QPushButton()
         button.setIcon(QIcon(f"assets/icons/{icon_path}"))
         button.setToolTip(tooltip)
+        # Set the button's fixed size
+        button.setFixedSize(size[0], size[1])    
+        button.setIconSize(QSize(size[0] - 4, size[1] - 4))  # Slightly smaller than the button size
+    
+        button.setStyleSheet("background: transparent;")
         button.clicked.connect(action)
         return button
     
-    def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.LeftButton:
-            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
-            event.accept()
-
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if event.buttons() == Qt.LeftButton:
-            self.move(event.globalPos() - self.drag_position)
-            event.accept()
-
     def cell_double_clicked(self, index):
         """
         Handles double-click events in the table view.
@@ -361,42 +354,7 @@ class DataViewApp(QWidget):
         # Load main location from settings
         location = list(load_settings_data()["Settings"]["Location"].keys())[0]
 
-        folder_patterns = [
-            # Brand and model with device type
-            f"{brand} {model} {device_type}",   # Space-separated
-            f"{brand}_{model}_{device_type}",   # Underscore-separated
-            f"{brand}{model}{device_type}",     # Concatenated
-            f"{brand} {model}_{device_type}",   # Model and device type, underscore-separated
-            f"{brand}_{model} {device_type}",   # Brand and model underscore-separated, device type space-separated
-
-            # Brand and model only
-            f"{brand} {model}",                 # Space-separated
-            f"{brand}_{model}",                 # Underscore-separated
-            f"{brand}{model}",                  # Concatenated
-
-            # Brand and model with prefixed device type
-            f"{brand} {model} {device_type}",   # Space-separated
-            f"{brand}_{model}_{device_type}",   # Underscore-separated
-            f"{brand}{model}{device_type}",     # Concatenated
-
-            # Prefixed with hash (#)
-            f"#{brand} {model} {device_type}",  # #Brand, space-separated
-            f"#{brand}_{model}_{device_type}",  # #Brand, underscore-separated
-            f"#{brand}{model}{device_type}",    # #Brand concatenated
-            f"#{brand} {model}",                # #Brand and model, space-separated
-            f"#{brand}_{model}",                # #Brand and model, underscore-separated
-            f"#{brand}{model}",                 # #Brand and model concatenated
-            
-            # Brand and model, prefixed with model and device type
-            f"{model} {device_type}",           # Model and device type, space-separated
-            f"{model}_{device_type}",           # Model and device type, underscore-separated
-            f"{model}{device_type}",            # Model and device type concatenated
-            f"{model}",                         # Model only
-            f"#{model} {device_type}",          # #Model and device type, space-separated
-            f"#{model}_{device_type}",          # #Model and device type, underscore-separated
-            f"#{model}{device_type}",           # #Model and device type concatenated
-            f"#{model}"                         # #Model only
-        ]
+        folder_patterns = generate_folder_patterns(brand, model, device_type)
         # Open the first existing folder or show an error
         # Search for the first matching folder
         try:
@@ -417,12 +375,27 @@ class DataViewApp(QWidget):
                     os.startfile(folder_path)
                     print(f"DEBUG: Folder '{folder_path}' opened successfully.")
                     return
-            show_message("warning","Folder Not Found",f"No folder found at:\n" + "\n".join(f"'{path}'" for path in folder_patterns)) 
+            '''
+            textwrap.fill() automatically breaks the lines at the specified width 80 characters).
+            ''' 
+            formatted_paths = ", ".join(f"'{path}'" for path in folder_patterns)
+            show_message("warning","Folder Not Found",f"No folder found for:\n {fill(formatted_paths, width=120)}")
+            print(f"No folder found at:\n{fill(formatted_paths, width=80)}") 
 
             
         # Show error if no folder exists
         except Exception as e:
             print(f"ERROR: An unexpected error occurred: {e}")
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if event.buttons() == Qt.LeftButton:
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
 
 if __name__ == "__main__":
     app = QApplication([])
