@@ -24,10 +24,10 @@ class AddToDatabaseWindow(QWidget):
         self.setup_layout()
 
     def setup_window(self):
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint)
         self.setWindowTitle("Add New")
-        self.setWindowIcon(QIcon("assets/icons/icon.ico"))
-        self.set_background_image(f"assets/image/background-{random.randint(1, 2)}.png")
+        self.setWindowIcon(QIcon("assets/icons/add.svg"))
+        self.set_background_image(f"assets/image/background-{random.randint(1, 4)}.png")
         self.setStyleSheet("QLabel { color: white; }")
         self.setMinimumSize(500, 300)
 
@@ -38,22 +38,6 @@ class AddToDatabaseWindow(QWidget):
         font_settings = QFont()
         font_settings.setPointSize(12)
         input_height = 35
-
-        # Close Button
-        close_button = self.create_button("X", "red", self.close, font_settings, (20, 20))
-        close_button.setStyleSheet("""
-            QPushButton {
-                background-color: red;
-                color: white;  /* White Text */
-                font-weight: bold;
-                border: none;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: darkred;
-            }
-        """)
-        grid_layout.addWidget(close_button, 0, 2, Qt.AlignRight)
 
         # Load Settings Data
         settings_data = load_settings_data()
