@@ -58,7 +58,7 @@ def save_encrypted_pin():
 
 # Load the encrypted PIN and check for tampering
 def load_encrypted_pin():
-    if not os.path.exists(SECURE_PIN_FILE):
+    if not os.path.exists(SECURE_PIN_FILE) or not os.path.exists(HASH_FILE):
         save_encrypted_pin()
 
     # Validate file integrity
@@ -83,7 +83,7 @@ class PinDialog(QDialog):
         self.setWindowTitle("Enter PIN")
         self.setFixedSize(200, 75)
         self.setWindowIcon(QIcon("assets/icons/lock.svg"))
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Dialog)  # Always on top
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Dialog | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
         
         # Layout
         layout = QVBoxLayout()        
