@@ -48,16 +48,68 @@ def show_message(msg_type, title, message, parent=None):
 
 
 def confirm_message(title, message, parent=None):
-    """Ask the user for confirmation and return the response with error handling."""
+    """
+    Ask the user for confirmation and return the response with error handling.
+    """
     try:
         if not title or not message:
             raise ValueError("Both title and message must be provided and cannot be empty.")
         
         print(f"DEBUG: Asking for Confirmation - Title: {title}, Message: {message}")
         
-        reply = QMessageBox.question(
-            parent, title, message, QMessageBox.Yes | QMessageBox.No
-        )
+        # Create a QMessageBox instance
+        msg_box = QMessageBox(parent)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(str(message))  # Set the message text
+        
+        # Set the QMessageBox buttons
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        # Find the standard buttons and style them
+        yes_button = msg_box.button(QMessageBox.Yes)
+        no_button = msg_box.button(QMessageBox.No)
+
+        # Apply styles
+        yes_button.setStyleSheet("""
+            QPushButton {
+                min-width: 50px;
+                min-height: 20px;
+                font-size: 14px;
+                color: white;
+                background-color: #4CAF50;  /* Green */
+                border-radius: 4px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #388E3C;  /* Dark Green */
+            }
+        """)
+
+        no_button.setStyleSheet("""
+            QPushButton {
+                min-width: 50px;
+                min-height: 20px;
+                font-size: 14px;
+                color: white;
+                background-color: #F44336;  /* Red */
+                border-radius: 4px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #D32F2F;  /* Dark Red */
+            }
+        """)
+
+        # Set the QMessageBox icon
+        icon_path = os.path.join(os.getcwd(), "assets/icons/question.svg")
+        if os.path.exists(icon_path):
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setWindowIcon(QIcon(icon_path))
+        else:
+            print(f"WARNING: Icon file not found at {icon_path}. Using default icon.")
+
+        # Display the message box and get the user's response
+        reply = msg_box.exec_()
         return reply == QMessageBox.Yes
     except ValueError as ve:
         print(f"ERROR: {ve}")
